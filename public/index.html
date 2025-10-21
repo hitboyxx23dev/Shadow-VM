@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hyperbeam VM Embed</title>
+  <title>Shadow VM</title>
   <style>
-    body { margin: 0; background: #000; }
-    #hyperbeam { width: 100vw; height: 100vh; }
+    body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
+    #hyperbeam { width: 100vw; height: 100vh; display: none; }
+    #controls {
+      position: absolute; top: 10px; left: 10px;
+      z-index: 1000; display: flex; gap: 8px;
+    }
     #loading {
       position: absolute;
       top: 50%; left: 50%;
@@ -16,38 +20,52 @@
   </style>
 </head>
 <body>
-  <div id="loading">🚀 Starting your Hyperbeam VM...</div>
-  <div id="hyperbeam" style="display:none;"></div>
+  <div id="controls">
+    <select id="region">
+      <option value="us-east">US East</option>
+      <option value="us-west">US West</option>
+      <option value="eu-west">EU West</option>
+      <option value="ap-southeast">Asia Pacific</option>
+    </select>
+    <button id="start">Start VM</button>
+  </div>
+
+  <div id="loading">🚀 Choose a region and start your Shadow VM...</div>
+  <div id="hyperbeam"></div>
 
   <script type="module">
     import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
 
-    async function init() {
-      try {
-        const resp = await fetch("/create-vm", { method: "POST" });
-        const data = await resp.json();
+    document.getElementById("start").addEventListener("click", async () => {
+      const area = document.getElementById("region").value;
+      const loading = document.getElementById("loading");
+      const container = document.getElementById("hyperbeam");
 
+      loading.innerText = "🚀 Starting your Shadow VM...";
+      container.style.display = "none";
+
+      try {
+        const resp = await fetch("/api/create-vm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ area }),
+        });
+
+        const data = await resp.json();
         console.log("VM data:", data);
 
-        if (!data.embed_url) {
-          throw new Error("No embed_url returned from server.");
-        }
+        if (!data.embed_url) throw new Error("No embed_url returned from server");
 
-        const hb = await Hyperbeam(document.getElementById("hyperbeam"), data.embed_url);
+        const hb = await Hyperbeam(container, data.embed_url);
+        await hb.tabs.update({ url: "https://example.com" });
 
-        // Optional: Open a default page
-        hb.tabs.update({ url: "https://example.com" });
-
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("hyperbeam").style.display = "block";
+        loading.style.display = "none";
+        container.style.display = "block";
       } catch (err) {
         console.error("❌ Failed to load Hyperbeam:", err);
-        document.getElementById("loading").innerText =
-          "⚠️ Failed to connect. Try refreshing or check console logs.";
+        loading.innerText = "⚠️ Failed to connect. Try refreshing or check console logs.";
       }
-    }
-
-    init();
+    });
   </script>
 </body>
 </html>
