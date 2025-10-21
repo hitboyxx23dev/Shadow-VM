@@ -1,4 +1,15 @@
-<div id="controls">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shadow VM Launcher</title>
+  <style>
+    body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
+    input, select, button { margin: 5px; padding: 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Start Shadow VM</h2>
   <input id="apiKey" type="password" placeholder="Enter Hyperbeam API Key" />
   <select id="region">
     <option value="us-east">US East</option>
@@ -7,49 +18,42 @@
     <option value="ap-southeast">Asia Pacific</option>
   </select>
   <button id="start">Start VM</button>
-</div>
-<div id="loading">🚀 Enter API key and start your VM...</div>
-<div id="hyperbeam"></div>
 
-<script type="module">
-  import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
+  <div id="output" style="margin-top:20px;"></div>
 
-  document.getElementById("start").addEventListener("click", async () => {
-    const apiKey = document.getElementById("apiKey").value.trim();
-    const area = document.getElementById("region").value;
-    const loading = document.getElementById("loading");
-    const container = document.getElementById("hyperbeam");
+  <script type="module">
+    document.getElementById("start").addEventListener("click", async () => {
+      const apiKey = document.getElementById("apiKey").value.trim();
+      const area = document.getElementById("region").value;
+      const output = document.getElementById("output");
+      output.innerText = "🚀 Creating VM...";
 
-    if (!apiKey) {
-      alert("Please enter your Hyperbeam API key.");
-      return;
-    }
-
-    loading.innerText = "🚀 Starting your Shadow VM...";
-    container.style.display = "none";
-
-    try {
-      const resp = await fetch("/api/create-vm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, area }),
-      });
-
-      const data = await resp.json();
-      console.log("VM data:", data);
-
-      if (!data.embed_url) {
-        throw new Error("No embed_url returned from server");
+      if (!apiKey) {
+        alert("Please enter your API key.");
+        return;
       }
 
-      const hb = await Hyperbeam(container, data.embed_url);
-      await hb.tabs.update({ url: "https://example.com" });
+      try {
+        const resp = await fetch("/api/create-vm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apiKey, area }),
+        });
 
-      loading.style.display = "none";
-      container.style.display = "block";
-    } catch (err) {
-      console.error("❌ Failed to load Hyperbeam:", err);
-      loading.innerText = "⚠️ Failed to connect. Check console logs and API key.";
-    }
-  });
-</script>
+        const data = await resp.json();
+        console.log("VM data:", data);
+
+        if (!data.embed_url) {
+          output.innerText = "❌ Failed to create VM. Check server logs.";
+          return;
+        }
+
+        output.innerHTML = `✅ VM ready! <a href="${data.embed_url}" target="_blank">Open VM</a>`;
+      } catch (err) {
+        console.error(err);
+        output.innerText = "❌ Error creating VM. Check console for details.";
+      }
+    });
+  </script>
+</body>
+</html>
