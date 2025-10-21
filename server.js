@@ -1,56 +1,62 @@
 import express from "express";
 import fetch from "node-fetch";
+import cors from "cors";
+import dotenv from "dotenv";
 
+dotenv.config();
 const app = express();
-app.use(express.static("public")); // Serve frontend
+
+app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
-// Helper function to create VM (tries multiple regions)
-async function createVM() {
-  const regions = ["us-east", "us-west", "eu-west", "ap-southeast"];
-  let lastError = null;
+// Helper: create VM in specified or fallback region
+async function createVM(region = "us-east") {
+  try {
+    console.log(`🛰️ Creating Hyperbeam VM in region: ${region}`);
+    const response = await fetch("https://engine.hyperbeam.com/v0/vm", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HYPERBEAM_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ region }),
+    });
 
-  for (const region of regions) {
-    try {
-      console.log(`🔄 Trying region: ${region}`);
-      const response = await fetch("https://engine.hyperbeam.com/v0/vm", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HYPERBEAM_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ region }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`HTTP ${response.status}: ${text}`);
-      }
-
-      const data = await response.json();
-      console.log(`✅ VM created in ${region}`);
-      return data;
-    } catch (err) {
-      console.error(`❌ Failed in ${region}:`, err.message);
-      lastError = err;
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Hyperbeam API error: ${text}`);
     }
-  }
 
-  throw lastError || new Error("All regions failed to create a VM");
+    const data = await response.json();
+    if (!data.embed_url) throw new Error("Missing embed_url in Hyperbeam response");
+    console.log(`✅ VM created: ${data.session_id}`);
+    return data;
+  } catch (err) {
+    console.error("❌ createVM error:", err.message);
+    throw err;
+  }
 }
 
-// Endpoint for frontend to request a VM
-app.post("/create-vm", async (req, res) => {
+// API: create VM (with optional region)
+app.post("/api/create-vm", async (req, res) => {
+  const { area } = req.body; // e.g. { "area": "eu-west" }
+  const region = area || "us-east"; // fallback
+
   try {
-    const vm = await createVM();
+    const vm = await createVM(region);
     res.json(vm);
   } catch (err) {
-    console.error("Error creating VM:", err.message);
-    res.status(500).json({ error: "Failed to create Hyperbeam VM" });
+    res.status(500).json({ error: err.message });
   }
 });
 
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
