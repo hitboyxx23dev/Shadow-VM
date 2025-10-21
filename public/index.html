@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shadow VM</title>
+  <style>
+    body { margin: 0; background: #111; }
+    #hyperbeam { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="hyperbeam"></div>
+
+  <script type="module">
+    import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
+
+    const resp = await fetch("/create-vm", { method: "POST" });
+    const data = await resp.json();
+
+    const hb = await Hyperbeam(document.getElementById("hyperbeam"), data.embed_url);
+
+    // Optional: open a default site
+    hb.tabs.update({ url: "https://example.com" });
+  </script>
+</body>
+</html>
