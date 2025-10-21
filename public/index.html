@@ -3,25 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shadow VM</title>
+  <title>Hyperbeam VM Embed</title>
   <style>
-    body { margin: 0; background: #111; }
+    body { margin: 0; background: #000; }
     #hyperbeam { width: 100vw; height: 100vh; }
+    #loading {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff; font-family: sans-serif;
+    }
   </style>
 </head>
 <body>
-  <div id="hyperbeam"></div>
+  <div id="loading">🚀 Starting your Hyperbeam VM...</div>
+  <div id="hyperbeam" style="display:none;"></div>
 
   <script type="module">
     import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
 
-    const resp = await fetch("/create-vm", { method: "POST" });
-    const data = await resp.json();
+    async function init() {
+      try {
+        const resp = await fetch("/create-vm", { method: "POST" });
+        const data = await resp.json();
 
-    const hb = await Hyperbeam(document.getElementById("hyperbeam"), data.embed_url);
+        console.log("VM data:", data);
 
-    // Optional: open a default site
-    hb.tabs.update({ url: "https://example.com" });
+        if (!data.embed_url) {
+          throw new Error("No embed_url returned from server.");
+        }
+
+        const hb = await Hyperbeam(document.getElementById("hyperbeam"), data.embed_url);
+
+        // Optional: Open a default page
+        hb.tabs.update({ url: "https://example.com" });
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("hyperbeam").style.display = "block";
+      } catch (err) {
+        console.error("❌ Failed to load Hyperbeam:", err);
+        document.getElementById("loading").innerText =
+          "⚠️ Failed to connect. Try refreshing or check console logs.";
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
