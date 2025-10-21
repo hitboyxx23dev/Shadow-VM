@@ -1,71 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shadow VM</title>
-  <style>
-    body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
-    #hyperbeam { width: 100vw; height: 100vh; display: none; }
-    #controls {
-      position: absolute; top: 10px; left: 10px;
-      z-index: 1000; display: flex; gap: 8px;
+<div id="controls">
+  <input id="apiKey" type="password" placeholder="Enter Hyperbeam API Key" />
+  <select id="region">
+    <option value="us-east">US East</option>
+    <option value="us-west">US West</option>
+    <option value="eu-west">EU West</option>
+    <option value="ap-southeast">Asia Pacific</option>
+  </select>
+  <button id="start">Start VM</button>
+</div>
+<div id="loading">🚀 Enter API key and start your VM...</div>
+<div id="hyperbeam"></div>
+
+<script type="module">
+  import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
+
+  document.getElementById("start").addEventListener("click", async () => {
+    const apiKey = document.getElementById("apiKey").value.trim();
+    const area = document.getElementById("region").value;
+    const loading = document.getElementById("loading");
+    const container = document.getElementById("hyperbeam");
+
+    if (!apiKey) {
+      alert("Please enter your Hyperbeam API key.");
+      return;
     }
-    #loading {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #fff; font-family: sans-serif;
-    }
-  </style>
-</head>
-<body>
-  <div id="controls">
-    <select id="region">
-      <option value="us-east">US East</option>
-      <option value="us-west">US West</option>
-      <option value="eu-west">EU West</option>
-      <option value="ap-southeast">Asia Pacific</option>
-    </select>
-    <button id="start">Start VM</button>
-  </div>
 
-  <div id="loading">🚀 Choose a region and start your Shadow VM...</div>
-  <div id="hyperbeam"></div>
+    loading.innerText = "🚀 Starting your Shadow VM...";
+    container.style.display = "none";
 
-  <script type="module">
-    import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js";
+    try {
+      const resp = await fetch("/api/create-vm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, area }),
+      });
 
-    document.getElementById("start").addEventListener("click", async () => {
-      const area = document.getElementById("region").value;
-      const loading = document.getElementById("loading");
-      const container = document.getElementById("hyperbeam");
+      const data = await resp.json();
+      console.log("VM data:", data);
 
-      loading.innerText = "🚀 Starting your Shadow VM...";
-      container.style.display = "none";
-
-      try {
-        const resp = await fetch("/api/create-vm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ area }),
-        });
-
-        const data = await resp.json();
-        console.log("VM data:", data);
-
-        if (!data.embed_url) throw new Error("No embed_url returned from server");
-
-        const hb = await Hyperbeam(container, data.embed_url);
-        await hb.tabs.update({ url: "https://example.com" });
-
-        loading.style.display = "none";
-        container.style.display = "block";
-      } catch (err) {
-        console.error("❌ Failed to load Hyperbeam:", err);
-        loading.innerText = "⚠️ Failed to connect. Try refreshing or check console logs.";
+      if (!data.embed_url) {
+        throw new Error("No embed_url returned from server");
       }
-    });
-  </script>
-</body>
-</html>
+
+      const hb = await Hyperbeam(container, data.embed_url);
+      await hb.tabs.update({ url: "https://example.com" });
+
+      loading.style.display = "none";
+      container.style.display = "block";
+    } catch (err) {
+      console.error("❌ Failed to load Hyperbeam:", err);
+      loading.innerText = "⚠️ Failed to connect. Check console logs and API key.";
+    }
+  });
+</script>
