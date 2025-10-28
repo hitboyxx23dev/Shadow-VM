@@ -1,9 +1,74 @@
 <div style="font-family: sans-serif">
   <button id="gotoYouTubeBtn">Open Youtube.com</button>
   Volume: <input type="range" min="0" max="100" value="100" id="range">
-  <p>Current website: <span id="currentSite"></p>
+  <p>Current website: <span id="currentSite"></span></p>
 </div>
-<div id="cloudComputerDiv" style="height:720px;width:1280px"></div>
+
+<div id="cloudComputerDiv"></div>
+
+<style>
+  body {
+    background: linear-gradient(135deg, #000010, #0a0030, #250033);
+    color: #c9aaff;
+    font-family: "Poppins", sans-serif;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+  }
+
+  button {
+    background: linear-gradient(90deg, #4b0082, #6a0dad);
+    border: none;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px #8000ff;
+    transition: all 0.3s ease;
+    margin: 10px;
+  }
+
+  button:hover {
+    background: linear-gradient(90deg, #6a0dad, #4b0082);
+    box-shadow: 0 0 20px #a000ff;
+    transform: scale(1.05);
+  }
+
+  input[type="range"] {
+    accent-color: #8000ff;
+    width: 150px;
+    margin-left: 10px;
+  }
+
+  p {
+    color: #a6a6ff;
+    font-size: 1rem;
+  }
+
+  #cloudComputerDiv {
+    height: 720px;
+    width: 1280px;
+    border: 2px solid #8000ff;
+    border-radius: 12px;
+    box-shadow: 0 0 25px #4b0082;
+    margin-top: 20px;
+    background-color: #050011;
+  }
+
+  span {
+    color: #8e7cff;
+    font-weight: bold;
+  }
+
+  @media (max-width: 1300px) {
+    #cloudComputerDiv {
+      width: 95%;
+      height: 500px;
+    }
+  }
+</style>
+
 <script type="module">
   import Hyperbeam from "https://unpkg.com/@hyperbeam/web@latest/dist/index.js"
   const resp = await fetch("/computer")
